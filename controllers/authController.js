@@ -5,9 +5,9 @@ import { sendMail } from "../config/sendMail.js";
 import crypto from "crypto";
 
 export const register = async (req, res, next) => {
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password, businessName } = req.body;
 
-  if (!firstName || !lastName || !email || !password) {
+  if (!firstName || !lastName || !email || !password ||!businessName) {
     const error = new Error("All fields are required");
     error.statusCode = 400;
     return next(error);
