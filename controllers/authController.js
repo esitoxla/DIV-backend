@@ -1,5 +1,7 @@
 import User from "../models/auth.js";
 import jwt from "jsonwebtoken";
+import { sendMail } from "../config/sendMail.js";
+import crypto from "crypto"
 
 export const register = async (req, res, next) => {
   const { firstName, lastName, businessName, email, password } = req.body;
@@ -130,35 +132,71 @@ export const forgotPassword = async (req, res, next) => {
 };
 
 export const resetPassword = async (req, res, next) => {
+  try {
+    const { resetToken } = req.params;
+  
+    const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
+  
+    const user = await User.findOne({
+      resetPasswordToken: hashed,
+      resetPasswordTokenExpire: { $gt: Date.now() },
+    });
+  
+    if (!user) {
+      const error = new Error("The token or link has expired");
+      error.statusCode = 400;
+      return next(error);
+    }
+  
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpire = undefined;
+    await user.save();
+  
+    res.status(200).json({
+      success: true,
+      message: "password reset successfully",
+    });
+  } catch (error) {
+    // console.error("RESET PASSWORD ERROR:", error);
+    next(error)
+  }
+};
+
+
+//check if reset link is vaild
+export const checkLink = async (req, res, next) => {
   const { resetToken } = req.params;
 
-  const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
-
-  const user = await User.findOne({
-    resetPasswordToken: hashed,
-    resetPasswordTokenExpire: { $gt: Date.now() },
-  });
-
-  if (!user) {
-    const error = new Error("The token or link has expired");
-    error.statusCode = 400;
-    return next(error);
+  try {
+    const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
+  
+    const user = await User.findOne({
+      resetPasswordToken: hashed,
+      resetPasswordTokenExpire: { $gt: Date.now() },
+    });
+  
+    if (!user) {
+     const error = new Error("The token or link has expired");
+     error.statusCode = 400;
+     return next(error); 
+    }
+  
+    res.status(200).json({ success: true, message: "valid reset link" });
+  } catch (error) {
+    next(error);
   }
+}
 
-  user.password = req.body.password;
-  user.resetPasswordToken = undefined;
-  user.resetPasswordTokenExpire = undefined;
-  await user.save();
 
-  res.status(200).json({
-    success: true,
-    message: "password reset successfully",
-  });
-};
+
 
 export const getUser = async (req, res, next) => {
   try {
     const token = req.cookies.jwt;
+    // console.log("Cookies:", req.cookies);
+    // console.log("User from middleware:", req.user);
+
 
     if (!token) {
       const error = new Error("user not found");
@@ -191,13 +229,11 @@ export const getUser = async (req, res, next) => {
 };
 
 
-
 export const updateUserById = async (req, res, next) => {
-  const { id } = req.params;
 
   try {
     const user = await User.findByIdAndUpdate(
-      id,
+      req.user._id,
       req.body,
       { new: true, runValidators: true } // ensures validation + return updated doc
     ).select("-password -__v");
@@ -222,7 +258,7 @@ export const profileUpload = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
 
-    user.profilePicture = `uploads/${req.file.filename}`;
+    user.profilePicture = `upload/${req.file.filename}`;
     await user.save();
 
     // refetch or use lean copy so password doesn’t come back
@@ -237,3 +273,31 @@ export const profileUpload = async (req, res, next) => {
     next(error);
   }
 };
+
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+  
+    if (!oldPassword || !newPassword) {
+      const error = new Error("Both Passwords required!");
+      error.statusCode = 400;
+      return next(error);
+    }
+  
+    const user = await User.findById(req.user._id);
+  
+    const isMatched = await user.comparePassword(oldPassword, user.password);
+    if (!isMatched) {
+      const error = new Error("password incorrect");
+      error.statusCode = 401;
+      return next(error);
+    }
+  
+    user.password = newPassword;
+    await user.save();
+    res.status(200).json({ success: true, message: "Password changed!"});
+  } catch (error) {
+    next(error);
+  }
+}

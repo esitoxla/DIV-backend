@@ -16,6 +16,9 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    phone: {
+      type: Number,
+    },
     email: {
       type: String,
       required: true,
@@ -33,7 +36,6 @@ const userSchema = new Schema(
     },
     confirmPassword: {
       type: String,
-      required: true,
       minLength: 5,
     },
     profilePicture: { type: String }, // Cloudinary or image URL
@@ -80,7 +82,7 @@ userSchema.methods.generatePasswordResetToken = function () {
     .update(resetToken)
     .digest("hex");
 
-  this.resetPasswordTokenExpire = Date.now() + 24 * 60 * 1000;
+  this.resetPasswordTokenExpire = Date.now() + 24 * 60  * 60 * 1000;
 
   return resetToken;
 };
