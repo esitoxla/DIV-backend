@@ -17,7 +17,6 @@ const qrCodeSchema = new Schema({
     size: { type: Number, default: 300 },
     color: { type: String, default: "#000000" },
     bgColor: { type: String, default: "#ffffff" },
-    ecc: { type: String, enum: ["L", "M", "Q", "H"], default: "M" },
     logoUrl: { type: String },
     shape: { type: String },
   },
@@ -25,7 +24,6 @@ const qrCodeSchema = new Schema({
   file: {
     pngUrl: { type: String },
     svgUrl: { type: String },
-    thumbUrl: { type: String },
     pdfUrl: { type: String },
   },
 

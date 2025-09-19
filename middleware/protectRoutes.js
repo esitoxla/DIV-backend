@@ -5,6 +5,9 @@ export const protectRoutes = async (req, res, next) => {
   try {
     const token = req.cookies.jwt;
 
+    // console.log("Cookies received:", req.cookies);
+    // console.log("Token:", req.cookies.jwt);
+
     if (!token) {
       return res.status(401).json({ message: "User not logged in!" });
     }
