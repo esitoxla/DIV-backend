@@ -22,7 +22,7 @@ app.use("/upload", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(
   cors({
-    origin: "http://localhost:5175",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );

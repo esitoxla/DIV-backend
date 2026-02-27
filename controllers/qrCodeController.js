@@ -62,6 +62,7 @@ export const createQrCode = async (req, res, next) => {
       size,
       status,
       scans,
+      vendorId: req.user?._id
     });
 
     res.status(201).json({
@@ -76,19 +77,22 @@ export const createQrCode = async (req, res, next) => {
 };
 
 export const getVendorsQrCode = async (req, res, next) => {
-  const { vendorId } = req.params;
+  try {
+    const qrCodes = await QrCode.find({ vendorId: req.user._id })
+      .populate("folderId", "name")
+      .sort({ createdAt: -1 });
 
-  const qrCodes = await QrCode.find({ vendorId })
-    .populate("folderId", "name") // include folder name
-    .sort({ createdAt: -1 });
-
-  res.status(201).json({
-    success: true,
-    StatusCode: 201,
-    message: "Qr code saved successful!",
-    qrCodes,
-  });
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: "QR codes fetched successfully!",
+      qrCodes,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
+
 
 // GET /api/qrcodes/vendor/:vendorId
 // export const getVendorQRCodes = async (req, res, next) => {

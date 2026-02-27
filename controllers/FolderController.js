@@ -1,14 +1,11 @@
 import Folder from "../models/folderModel.js";
 import User from "../models/auth.js";
+import QrCode from "../models/qrCodeModel.js";
 
 export const fetchFolders = async (req, res, next) => {
   try {
-    const search = req.query.search || "";
-
-    const folders = await Folder.find(
-      search ? { name: { $regex: search, $options: "i" } } : {}
-    );
-
+    
+    const folders = await Folder.find({ user: req.user._id }).populate("user")
     res.status(200).json({
       success: true,
       StatusCode: 200,
@@ -49,10 +46,10 @@ export const addFolder = async (req, res, next) => {
 
 
 export const deleteFolder = async (req, res, next) => {
-  const { id } = req.params; // folder ID
-  
+  const { id } = req.params; // Folder ID
+
   try {
-    //Get logged-in user
+    // Verify logged-in user
     const user = await User.findById(req.user._id);
     if (!user) {
       const error = new Error("Unauthorized");
@@ -60,17 +57,21 @@ export const deleteFolder = async (req, res, next) => {
       return next(error);
     }
 
+    // Find and delete the folder
     const folder = await Folder.findByIdAndDelete(id);
 
     if (!folder) {
-      const error = new Error("Qrcode not found");
+      const error = new Error("Folder not found");
       error.statusCode = 404;
       return next(error);
     }
 
+    // Delete all QR codes linked to this folder
+    await QrCode.deleteMany({ folderId: id });
+
     res.status(200).json({
       success: true,
-      message: "Folder deleted successfully!",
+      message: "Folder and associated QR codes deleted successfully!",
     });
   } catch (error) {
     next(error);
