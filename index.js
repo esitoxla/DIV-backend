@@ -22,7 +22,7 @@ app.use("/upload", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://div-qrcode.netlify.app"],
+    origin: ["http://localhost:5174", "https://div-qrcode.netlify.app"],
     credentials: true,
   }),
 );
